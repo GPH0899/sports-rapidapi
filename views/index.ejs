@@ -5,8 +5,6 @@
     <meta charset="utf-8" />
     <title>NFL Stoppage Detector</title>
     <style>
-        
-
         body {
             font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(120deg, #e3eafc 0%, #f8fafc 100%);
@@ -151,153 +149,376 @@
 
 <body>
     <div class="container">
-        
-    <h1>NFL Live / Upcoming Games</h1>
 
-    <div class="row">
-        <input type="date" id="dayPicker" />
-        <select id="calendarSelect" style="min-width:220px;"></select>
-        <button id="loadGamesBtn" type="button">Load Games</button>
-        <select id="gameSelect" style="min-width:320px;">
-            <option value="">— Select a game —</option>
-        </select>
-        <form id="statusForm" action="/gameStatus" method="get" style="display:inline;">
-            <input type="hidden" name="gameId" id="gameIdInput" />
-            <button type="submit">Check Game Status</button>
-        </form>
-    </div>
+        <h1>NFL Live / Upcoming Games</h1>
 
-    <div id="gamesInfo" class="muted" style="margin-top:.5rem;"></div>
-
-    <% if (error) { %>
-        <div class="card bad"><strong>Error:</strong>
-            <%= error %>
+        <div class="row">
+            <input type="date" id="dayPicker" />
+            <select id="calendarSelect" style="min-width:220px;"></select>
+            <button id="loadGamesBtn" type="button">Load Games</button>
+            <button id="currentGamesBtn" type="button"
+                style="background:#38a169; color:#fff; border:none; border-radius:8px; padding:.7rem 1.3rem; font-weight:600; font-size:1rem; cursor:pointer;">Current
+                Games</button>
+            <select id="gameSelect" style="min-width:320px;">
+                <option value="">— Select a game —</option>
+            </select>
+            <form id="statusForm" action="/gameStatus" method="get" style="display:inline;">
+                <input type="hidden" name="gameId" id="gameIdInput" />
+                <button type="submit">Check Game Status</button>
+            </form>
         </div>
-        <% } %>
 
-            <% if (response) { %>
-                <div class="card">
-                    <div><strong>Game ID:</strong>
-                        <%= response.gameId %>
-                    </div>
-                    <div><strong>Game Status:</strong>
-                        <%= response.gameStatus || "—" %>
-                    </div>
-                    <div><strong>Last Play:</strong> <span class="muted">
-                            <%= response.lastPlaySummary || "—" %>
-                        </span></div>
-                    <div style="margin-top:.5rem;">
-                        <% if (response.isStoppage) { %>
-                            <div class="warn">
-                                <strong>Stoppage Detected</strong>
-                                <% if (response.stoppageReason) { %> — <%= response.stoppageReason %>
-                                        <% } %>
-                                            <% if (response.stoppageDurationPretty) { %> — <%=
-                                                    response.stoppageDurationPretty %>
-                                                    <% } %>
-                                                        <span class="muted"> (confidence: <%= response.confidence %>
-                                                                )</span>
-                            </div>
-                            <% } else { %>
-                                <div class="ok">
-                                    <strong>Game is in play</strong>
-                                    <span class="muted"> (confidence: <%= response.confidence %>)</span>
+        <div id="gamesInfo" class="muted" style="margin-top:.5rem;"></div>
+
+        <% if (error) { %>
+            <div class="card bad"><strong>Error:</strong>
+                <%= error %>
+            </div>
+            <% } %>
+
+                <% if (response) { %>
+                    <div class="card">
+                        <div><strong>Game ID:</strong>
+                            <%= response.gameId %>
+                        </div>
+                        <div class="muted" style="margin-top:1rem;">
+                            <strong>Game Status:</strong>
+                            <%= response.gameStatus || "—" %>
+                                <% if (response.debug && response.debug.lastPlay && response.debug.lastPlay.period) { %>
+                                    <span style="margin-left:1rem;">Period: Q<%= response.debug.lastPlay.period.number
+                                            %></span>
+                                    <% } %>
+                                        <% if (response.debug && response.debug.lastPlay &&
+                                            response.debug.lastPlay.type) { %>
+                                            <span style="margin-left:1rem;">Status: <%=
+                                                    response.debug.lastPlay.type.text ||
+                                                    response.debug.lastPlay.type.alternativeText || "—" %></span>
+                                            <% } %>
+                                                <% if (response.debug && response.debug.lastPlay &&
+                                                    response.debug.lastPlay.wallclock &&
+                                                    response.debug.lastPlay.sequenceNumber && response.debug.plays) { %>
+                                                    <% var plays=response.debug.plays; var
+                                                        lastSeq=response.debug.lastPlay.sequenceNumber; var
+                                                        prevPlay=plays.find(function(p) { return
+                                                        p.sequenceNumber==lastSeq - 1; }); var gap=null; if (prevPlay &&
+                                                        prevPlay.wallclock) { var
+                                                        t1=Date.parse(response.debug.lastPlay.wallclock); var
+                                                        t0=Date.parse(prevPlay.wallclock); gap=Math.round((t1 - t0) /
+                                                        1000); } %>
+                                                        <% if (gap !==null) { %>
+                                                            <span style="margin-left:1rem;">Time Gap: <%= gap %>s</span>
+                                                            <% } %>
+                                                                <% } %>
+                        </div>
+                        <div><strong>Last Play:</strong> <span class="muted">
+                                <%= response.lastPlaySummary || "—" %>
+                            </span></div>
+                        <div style="margin-top:.5rem;">
+                            <% if (response.isStoppage) { %>
+                                <div class="warn">
+                                    <strong>Stoppage Detected</strong>
+                                    <% if (response.stoppageReason) { %> — <%= response.stoppageReason %>
+                                            <% } %>
+                                                <% if (response.stoppageDurationPretty) { %> — <%=
+                                                        response.stoppageDurationPretty %>
+                                                        <% } %>
+                                                            <span class="muted"> (confidence: <%= response.confidence %>
+                                                                    )</span>
                                 </div>
+                                <% } else { %>
+                                    <div class="ok">
+                                        <strong>Game is in play</strong>
+                                        <span class="muted"> (confidence: <%= response.confidence %>)</span>
+                                    </div>
+                                    <% } %>
+                        </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:center; margin-bottom:1rem;">
+                            <div>
+                                <strong>Teams:</strong>
+                                <% if (response.debug && response.debug.lastPlay && response.debug.lastPlay.competitors)
+                                    { %>
+                                    <% response.debug.lastPlay.competitors.forEach(function(team) { %>
+                                        <span style="margin-right:.7rem; font-weight:600; color:#2563eb;">
+                                            <%= team.team?.abbreviation || team.team?.displayName || team.team?.name
+                                                || "?" %>
+                                                (<%= team.score || "0" %>)
+                                        </span>
+                                        <% }) %>
+                                            <% } else { %>
+                                                <span>—</span>
+                                                <% } %>
+                            </div>
+                            <div>
+                                <strong>Period:</strong> Q<%= response.debug?.lastPlay?.period?.number || "—" %>
+                            </div>
+                            <div>
+                                <strong>Clock:</strong>
+                                <%= response.debug?.lastPlay?.clock?.displayValue || "—" %>
+                            </div>
+                            <div>
+                                <strong>Status:</strong>
+                                <%= response.debug?.lastPlay?.type?.text ||
+                                    response.debug?.lastPlay?.type?.alternativeText || "—" %>
+                            </div>
+                        </div>
+                        <div><strong>Game ID:</strong>
+                            <%= response.gameId %>
+                        </div>
+                        <div><strong>Game Status:</strong>
+                            <%= response.gameStatus || "—" %>
+                        </div>
+                        <div><strong>Last Play:</strong> <span class="muted">
+                                <%= response.lastPlaySummary || "—" %>
+                            </span></div>
+                        <div style="margin-top:.5rem;">
+                            <% if (response.isStoppage) { %>
+                                <div class="warn">
+                                    <strong>Stoppage Detected</strong>
+                                    <% if (response.stoppageReason) { %> — <%= response.stoppageReason %>
+                                            <% } %>
+                                                <% if (response.stoppageDurationPretty) { %> — <%=
+                                                        response.stoppageDurationPretty %>
+                                                        <% } %>
+                                                            <span class="muted"> (confidence: <%= response.confidence %>
+                                                                    )</span>
+                                </div>
+                                <% } else { %>
+                                    <div class="ok">
+                                        <strong>Game is in play</strong>
+                                        <span class="muted"> (confidence: <%= response.confidence %>)</span>
+                                    </div>
+                                    <% } %>
+                        </div>
+                        <div style="margin-top:.5rem;"><strong>Total Plays:</strong>
+                            <%= response.totalPlays %>
+                        </div>
+
+                        <% if (response && response.debug && response.debug.lastPlay) { %>
+                            <div style="margin-top:1.2rem;">
+                                <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">All Last Play Data
+                                </h3>
+                                <div
+                                    style="display:flex; flex-wrap:wrap; gap:0.5rem; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(49,130,206,0.04); padding:1rem;">
+                                    <% Object.entries(response.debug.lastPlay).forEach(function([key, value]) { %>
+                                        <div
+                                            style="flex:1 1 220px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:.5rem; padding:.7rem .9rem; background:#f8fafc;">
+                                            <div
+                                                style="font-weight:600; color:#2563eb; margin-bottom:.3rem; text-transform:capitalize;">
+                                                <%= key %>
+                                            </div>
+                                            <div style="color:#2d3748; word-break:break-word;">
+                                                <%= typeof value==='object' ? JSON.stringify(value, null, 2) : value %>
+                                            </div>
+                                        </div>
+                                        <% }) %>
+                                </div>
+                            </div>
+                                <% if (typeof fullResponse !== 'undefined' && fullResponse) { %>
+                                                                <div style="margin-top:1.2rem;">
+                                                                        <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Full Raw Response</h3>
+                                                                        <button type="button" id="toggleRawBtn" style="margin-bottom:.7rem; background:#3182ce; color:#fff; border:none; border-radius:6px; padding:.5rem 1rem; font-size:.98rem; cursor:pointer;">Show Raw Response</button>
+                                                                        <pre id="rawResponsePre" style="background:#edf2f7; padding:1.1rem; border-radius:10px; overflow:auto; font-size:1rem; color:#2d3748; margin-top:.5rem; display:none;">
+        <%= JSON.stringify(fullResponse, null, 2) %>
+                                                                        </pre>
+                                                                </div>
+                                                                <script>
+                                                                    const toggleRawBtn = document.getElementById('toggleRawBtn');
+                                                                    const rawResponsePre = document.getElementById('rawResponsePre');
+                                                                    if (toggleRawBtn && rawResponsePre) {
+                                                                        toggleRawBtn.addEventListener('click', function() {
+                                                                            if (rawResponsePre.style.display === 'none') {
+                                                                                rawResponsePre.style.display = 'block';
+                                                                                toggleRawBtn.textContent = 'Hide Raw Response';
+                                                                            } else {
+                                                                                rawResponsePre.style.display = 'none';
+                                                                                toggleRawBtn.textContent = 'Show Raw Response';
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                </script>
                                 <% } %>
+
+                            <% } %>
+
+                                <% if (response && response.debug && response.debug.lastPlay) { %>
+                                    <div style="margin-top:1.2rem;">
+                                        <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Last Play
+                                            Details</h3>
+                                        <div
+                                            style="display:flex; flex-wrap:wrap; gap:0.5rem; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(49,130,206,0.04); padding:1rem;">
+                                            <% Object.entries(response.debug.lastPlay).forEach(function([key, value]) {
+                                                %>
+                                                <div
+                                                    style="flex:1 1 220px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:.5rem; padding:.7rem .9rem; background:#f8fafc;">
+                                                    <div
+                                                        style="font-weight:600; color:#2563eb; margin-bottom:.3rem; text-transform:capitalize;">
+                                                        <%= key %>
+                                                    </div>
+                                                    <div style="color:#2d3748; word-break:break-word;">
+                                                        <%= typeof value==='object' ? JSON.stringify(value, null, 2) :
+                                                            value %>
+                                                    </div>
+                                                </div>
+                                                <% }) %>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                        <div style="margin-top:1.2rem;">
+                                            <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Full
+                                                Response Object</h3>
+                                            <pre
+                                                style="background:#edf2f7; padding:1.1rem; border-radius:10px; overflow:auto; font-size:1rem; color:#2d3748; margin-top:.5rem;">
+    <%= JSON.stringify(response, null, 2) %>
+                                    </pre>
+                                        </div>
                     </div>
-                    <div style="margin-top:.5rem;"><strong>Total Plays:</strong>
-                        <%= response.totalPlays %>
-                    </div>
+                    <% } %>
 
-                    <details style="margin-top:.5rem;">
-                        <summary>Debug JSON</summary>
-                        <pre><%= JSON.stringify(response, null, 2) %></pre>
-                    </details>
-                </div>
-                <% } %>
+                        <script>
+                            const loadBtn = document.getElementById('loadGamesBtn');
+                            const sel = document.getElementById('gameSelect');
+                            const info = document.getElementById('gamesInfo');
+                            const form = document.getElementById('statusForm');
+                            const gameIdInput = document.getElementById('gameIdInput');
 
-                    <script>
-                        const loadBtn = document.getElementById('loadGamesBtn');
-                        const sel = document.getElementById('gameSelect');
-                        const info = document.getElementById('gamesInfo');
-                        const form = document.getElementById('statusForm');
-                        const gameIdInput = document.getElementById('gameIdInput');
-
-                        // Calendar dropdown logic
-                        const calendarSelect = document.getElementById('calendarSelect');
-                        async function loadCalendar() {
-                            calendarSelect.innerHTML = '<option value="">Loading calendar…</option>';
-                            // Removed EJS template code from JavaScript function
-                            try {
-                                const r = await fetch('/api/calendar');
-                                const j = await r.json();
-                                const calendar = j.calendar || [];
-                                calendarSelect.innerHTML = '<option value="">— Pick week/entry —</option>';
-                                calendar.forEach(entry => {
-                                    const label = entry.label || entry.alternateLabel || entry.detail || entry.value;
-                                    const value = entry.startDate ? entry.startDate.substring(0, 10).replace(/-/g, '') : '';
-                                    calendarSelect.innerHTML += `<option value="${value}">${label} (${entry.detail || ''})</option>`;
-                                });
-                            } catch (e) {
-                                calendarSelect.innerHTML = '<option value="">Failed to load calendar</option>';
-                            }
-                        }
-                        loadCalendar();
-
-                        loadBtn.addEventListener('click', async () => {
-                            sel.innerHTML = '<option value="">Loading…</option>';
-                            info.textContent = '';
-                            // Get date from picker and format as YYYYMMDD
-                            const dayVal = document.getElementById('dayPicker').value;
-                            let dayStr = '';
-                            if (dayVal) {
-                                const d = new Date(dayVal);
-                                const yyyy = d.getFullYear();
-                                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                const dd = String(d.getDate()).padStart(2, '0');
-                                dayStr = `${yyyy}${mm}${dd}`;
-                            }
-                            // If calendar entry selected, override dayStr
-                            const calVal = calendarSelect.value;
-                            if (calVal) {
-                                dayStr = calVal;
-                            }
-                            try {
-                                const r = await fetch(`/api/games${dayStr ? `?day=${dayStr}` : ''}`);
-                                const j = await r.json();
-                                // If RapidAPI response, try to extract games
-                                let games = [];
-                                let count = 0;
-                                if (Array.isArray(j.games)) {
-                                    games = j.games;
-                                    count = j.count || games.length;
-                                } else if (Array.isArray(j.items)) {
-                                    games = j.items;
-                                    count = games.length;
-                                } else if (Array.isArray(j.events)) {
-                                    games = j.events;
-                                    count = games.length;
+                            // Calendar dropdown logic
+                            const calendarSelect = document.getElementById('calendarSelect');
+                            async function loadCalendar() {
+                                calendarSelect.innerHTML = '<option value="">Loading calendar…</option>';
+                                // Removed EJS template code from JavaScript function
+                                try {
+                                    const r = await fetch('/api/calendar');
+                                    const j = await r.json();
+                                    const calendar = j.calendar || [];
+                                    calendarSelect.innerHTML = '<option value="">— Pick week/entry —</option>';
+                                    calendar.forEach(entry => {
+                                        const label = entry.label || entry.alternateLabel || entry.detail || entry.value;
+                                        const value = entry.startDate ? entry.startDate.substring(0, 10).replace(/-/g, '') : '';
+                                        calendarSelect.innerHTML += `<option value="${value}">${label} (${entry.detail || ''})</option>`;
+                                    });
+                                } catch (e) {
+                                    calendarSelect.innerHTML = '<option value="">Failed to load calendar</option>';
                                 }
-                                sel.innerHTML = '<option value="">— Select a game —</option>';
-                                games.forEach(g => {
-                                    // Try to get id and label
-                                    const id = g.id || g.gameId || g.eventId || '';
-                                    const label = g.label || g.shortName || g.name || g.description || id;
-                                    sel.innerHTML += `<option value="${id}">${label}</option>`;
-                                });
-                                info.textContent = count
-                                    ? `Found ${count} game(s).`
-                                    : 'No games found for this date.';
-                            } catch (e) {
-                                sel.innerHTML = '<option value="">— Select a game —</option>';
-                                info.textContent = 'Failed to load games.';
                             }
-                        });
+                            loadCalendar();
 
-                        sel.addEventListener('change', () => {
-                            gameIdInput.value = sel.value || '';
-                        });
-                    </script>
+                            loadBtn.addEventListener('click', async () => {
+                                sel.innerHTML = '<option value="">Loading…</option>';
+                                info.textContent = '';
+                                // Get date from picker and format as YYYYMMDD
+                                const dayVal = document.getElementById('dayPicker').value;
+                                let dayStr = '';
+                                if (dayVal) {
+                                    const d = new Date(dayVal);
+                                    const yyyy = d.getFullYear();
+                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                    const dd = String(d.getDate()).padStart(2, '0');
+                                    dayStr = `${yyyy}${mm}${dd}`;
+                                }
+                                // If calendar entry selected, override dayStr
+                                const calVal = calendarSelect.value;
+                                if (calVal) {
+                                    dayStr = calVal;
+                                }
+                                try {
+                                    const r = await fetch(`/api/games${dayStr ? `?day=${dayStr}` : ''}`);
+                                    const j = await r.json();
+                                    // If RapidAPI response, try to extract games
+                                    let games = [];
+                                    let count = 0;
+                                    if (Array.isArray(j.games)) {
+                                        games = j.games;
+                                        count = j.count || games.length;
+                                    } else if (Array.isArray(j.items)) {
+                                        games = j.items;
+                                        count = games.length;
+                                    } else if (Array.isArray(j.events)) {
+                                        games = j.events;
+                                        count = games.length;
+                                    }
+                                    sel.innerHTML = '<option value="">— Select a game —</option>';
+                                    games.forEach(g => {
+                                        // Try to get id and label
+                                        const id = g.id || g.gameId || g.eventId || '';
+                                        let optionText = '';
+                                        if (g.shortName && g.name) {
+                                            optionText = `${g.shortName} (${g.name})`;
+                                        } else if (g.label) {
+                                            optionText = g.label;
+                                        } else if (g.shortName) {
+                                            optionText = g.shortName;
+                                        } else if (g.name) {
+                                            optionText = g.name;
+                                        } else if (g.description) {
+                                            optionText = g.description;
+                                        } else {
+                                            optionText = id;
+                                        }
+                                        sel.innerHTML += `<option value="${id}">${optionText}</option>`;
+                                    });
+                                    info.textContent = count
+                                        ? `Found ${count} game(s).`
+                                        : 'No games found for this date.';
+                                } catch (e) {
+                                    sel.innerHTML = '<option value="">— Select a game —</option>';
+                                    info.textContent = 'Failed to load games.';
+                                }
+                            });
+
+                            sel.addEventListener('change', () => {
+                                gameIdInput.value = sel.value || '';
+                            });
+
+                            // Add event for current games button
+                            const currentGamesBtn = document.getElementById('currentGamesBtn');
+                            currentGamesBtn.addEventListener('click', async () => {
+                                sel.innerHTML = '<option value="">Loading…</option>';
+                                info.textContent = '';
+                                try {
+                                    const r = await fetch('/api/games');
+                                    const j = await r.json();
+                                    let games = [];
+                                    let count = 0;
+                                    if (Array.isArray(j.games)) {
+                                        games = j.games;
+                                        count = j.count || games.length;
+                                    } else if (Array.isArray(j.items)) {
+                                        games = j.items;
+                                        count = games.length;
+                                    } else if (Array.isArray(j.events)) {
+                                        games = j.events;
+                                        count = games.length;
+                                    }
+                                    sel.innerHTML = '<option value="">— Select a game —</option>';
+                                    games.forEach(g => {
+                                        const id = g.id || g.gameId || g.eventId || '';
+                                        let optionText = '';
+                                        if (g.shortName && g.name) {
+                                            optionText = `${g.shortName} (${g.name})`;
+                                        } else if (g.label) {
+                                            optionText = g.label;
+                                        } else if (g.shortName) {
+                                            optionText = g.shortName;
+                                        } else if (g.name) {
+                                            optionText = g.name;
+                                        } else if (g.description) {
+                                            optionText = g.description;
+                                        } else {
+                                            optionText = id;
+                                        }
+                                        // Highlight live games
+                                        const isLive = (g.state && g.state.toLowerCase() === 'in') || (g.status && g.status.toLowerCase() === 'live');
+                                        sel.innerHTML += `<option value="${id}"${isLive ? ' style=\"background:#38a169;color:#fff;font-weight:bold;\"' : ''}>${optionText}${isLive ? ' (LIVE)' : ''}</option>`;
+                                    });
+                                    info.textContent = count
+                                        ? `Found ${count} current game(s).`
+                                        : 'No current games found.';
+                                } catch (e) {
+                                    sel.innerHTML = '<option value="">— Select a game —</option>';
+                                    info.textContent = 'Failed to load current games.';
+                                }
+                            });
+                        </script>
 
     </div>
 </body>

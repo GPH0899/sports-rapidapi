@@ -195,8 +195,10 @@ function toUnifiedResponse(gameId, raw) {
 
 app.get("/gameStatus", async (req, res) => {
   const gameId = req.query.gameId;
+  const selectedDay = req.query.day || null;
+  const selectedGame = req.query.game || null;
   if (!gameId) {
-    return res.render("index", { error: "Missing gameId", response: null });
+    return res.render("index", { error: "Missing gameId", response: null, selectedDay, selectedGame, selectedGameId: null });
   }
   try {
     const url = `https://${RAPID_API_HOST}/nfl-plays?id=${encodeURIComponent(gameId)}`;
@@ -210,9 +212,9 @@ app.get("/gameStatus", async (req, res) => {
     if (!apiRes.ok) throw new Error(`RapidAPI failed ${apiRes.status}`);
     const data = await apiRes.json();
     const unified = toUnifiedResponse(gameId, data);
-    res.render("index", { response: unified, error: null });
+    res.render("index", { response: unified, fullResponse: data, error: null, selectedDay, selectedGame, selectedGameId: gameId });
   } catch (e) {
-    res.render("index", { response: null, error: e.message });
+    res.render("index", { response: null, fullResponse: null, error: e.message, selectedDay, selectedGame, selectedGameId: gameId });
   }
 });
 
