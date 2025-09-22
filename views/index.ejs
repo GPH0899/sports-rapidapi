@@ -78,9 +78,7 @@
     const calendarSelect = document.getElementById('calendarSelect');
     async function loadCalendar() {
       calendarSelect.innerHTML = '<option value="">Loading calendar…</option>';
-            <% if (response.label) { %>
-              <h2 style="margin-top:1.5rem;"> <%= response.label %> </h2>
-            <% } %>
+            // Removed EJS template code from JavaScript function
       try {
         const r = await fetch('/api/calendar');
         const j = await r.json();
