@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>NFL Stoppage Detector</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+    select, input, button { font-size: 1rem; padding: .5rem; }
+    button { cursor: pointer; }
+    .card { margin-top: 1rem; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+    .ok { color: #166534; }
+    .warn { color: #92400e; }
+    .bad { color: #991b1b; }
+    .muted { color: #666; }
+    pre { background: #f7f7f7; padding: .75rem; border-radius: 6px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>NFL Live / Upcoming Games</h1>
+
+  <div class="row">
+    <input type="date" id="dayPicker" />
+    <select id="calendarSelect" style="min-width:220px;"></select>
+    <button id="loadGamesBtn" type="button">Load Games</button>
+    <select id="gameSelect" style="min-width:320px;">
+      <option value="">— Select a game —</option>
+    </select>
+    <form id="statusForm" action="/gameStatus" method="get" style="display:inline;">
+      <input type="hidden" name="gameId" id="gameIdInput" />
+      <button type="submit">Check Game Status</button>
+    </form>
+  </div>
+
+  <div id="gamesInfo" class="muted" style="margin-top:.5rem;"></div>
+
+  <% if (error) { %>
+    <div class="card bad"><strong>Error:</strong> <%= error %></div>
+  <% } %>
+
+  <% if (response) { %>
+    <div class="card">
+      <div><strong>Game ID:</strong> <%= response.gameId %></div>
+      <div><strong>Game Status:</strong> <%= response.gameStatus || "—" %></div>
+      <div><strong>Last Play:</strong> <span class="muted"><%= response.lastPlaySummary || "—" %></span></div>
+      <div style="margin-top:.5rem;">
+        <% if (response.isStoppage) { %>
+          <div class="warn">
+            <strong>Stoppage Detected</strong>
+            <% if (response.stoppageReason) { %> — <%= response.stoppageReason %><% } %>
+            <% if (response.stoppageDurationPretty) { %> — <%= response.stoppageDurationPretty %><% } %>
+            <span class="muted"> (confidence: <%= response.confidence %>)</span>
+          </div>
+        <% } else { %>
+          <div class="ok">
+            <strong>Game is in play</strong>
+            <span class="muted"> (confidence: <%= response.confidence %>)</span>
+          </div>
+        <% } %>
+      </div>
+      <div style="margin-top:.5rem;"><strong>Total Plays:</strong> <%= response.totalPlays %></div>
+
+      <details style="margin-top:.5rem;">
+        <summary>Debug JSON</summary>
+        <pre><%= JSON.stringify(response, null, 2) %></pre>
+      </details>
+    </div>
+  <% } %>
+
+  <script>
+    const loadBtn = document.getElementById('loadGamesBtn');
+    const sel = document.getElementById('gameSelect');
+    const info = document.getElementById('gamesInfo');
+    const form = document.getElementById('statusForm');
+    const gameIdInput = document.getElementById('gameIdInput');
+
+    // Calendar dropdown logic
+    const calendarSelect = document.getElementById('calendarSelect');
+    async function loadCalendar() {
+      calendarSelect.innerHTML = '<option value="">Loading calendar…</option>';
+            <% if (response.label) { %>
+              <h2 style="margin-top:1.5rem;"> <%= response.label %> </h2>
+            <% } %>
+      try {
+        const r = await fetch('/api/calendar');
+        const j = await r.json();
+        const calendar = j.calendar || [];
+        calendarSelect.innerHTML = '<option value="">— Pick week/entry —</option>';
+        calendar.forEach(entry => {
+          const label = entry.label || entry.alternateLabel || entry.detail || entry.value;
+          const value = entry.startDate ? entry.startDate.substring(0, 10).replace(/-/g, '') : '';
+          calendarSelect.innerHTML += `<option value="${value}">${label} (${entry.detail || ''})</option>`;
+        });
+      } catch (e) {
+        calendarSelect.innerHTML = '<option value="">Failed to load calendar</option>';
+      }
+    }
+    loadCalendar();
+
+    loadBtn.addEventListener('click', async () => {
+      sel.innerHTML = '<option value="">Loading…</option>';
+      info.textContent = '';
+      // Get date from picker and format as YYYYMMDD
+      const dayVal = document.getElementById('dayPicker').value;
+      let dayStr = '';
+      if (dayVal) {
+        const d = new Date(dayVal);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        dayStr = `${yyyy}${mm}${dd}`;
+      }
+      // If calendar entry selected, override dayStr
+      const calVal = calendarSelect.value;
+      if (calVal) {
+        dayStr = calVal;
+      }
+      try {
+        const r = await fetch(`/api/games${dayStr ? `?day=${dayStr}` : ''}`);
+        const j = await r.json();
+        // If RapidAPI response, try to extract games
+        let games = [];
+        let count = 0;
+        if (Array.isArray(j.games)) {
+          games = j.games;
+          count = j.count || games.length;
+        } else if (Array.isArray(j.items)) {
+          games = j.items;
+          count = games.length;
+        } else if (Array.isArray(j.events)) {
+          games = j.events;
+          count = games.length;
+        }
+        sel.innerHTML = '<option value="">— Select a game —</option>';
+        games.forEach(g => {
+          // Try to get id and label
+          const id = g.id || g.gameId || g.eventId || '';
+          const label = g.label || g.shortName || g.name || g.description || id;
+          sel.innerHTML += `<option value="${id}">${label}</option>`;
+        });
+        info.textContent = count
+          ? `Found ${count} game(s).`
+          : 'No games found for this date.';
+      } catch (e) {
+        sel.innerHTML = '<option value="">— Select a game —</option>';
+        info.textContent = 'Failed to load games.';
+      }
+    });
+
+    sel.addEventListener('change', () => {
+      gameIdInput.value = sel.value || '';
+    });
+  </script>
+</body>
+</html>
