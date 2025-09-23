@@ -1,7 +1,7 @@
 {
   "name": "sports-rapidapi",
   "version": "1.0.0",
-  "description": "",
+  "description": "NFL Stoppage Detector & Live Game Dashboard using Sports API of RapidAPI",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
