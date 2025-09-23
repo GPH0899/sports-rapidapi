@@ -21,7 +21,7 @@ This project is a modern Node.js/Express web app that displays live and upcoming
 1. Clone the repository:
 	```bash
 	git clone https://github.com/GPH0899/sports-rapidapi.git
-	cd sports-rapidapi/New\ folder
+	cd sports-rapidapi
 	```
 2. Install dependencies:
 	```bash
@@ -50,9 +50,6 @@ Visit [http://localhost:3001](http://localhost:3001) in your browser.
 - `views/index.ejs` — Main UI template
 - `public/` — Static assets (if any)
 - `.env` — Environment variables (not committed)
-
-## License
-ISC
 
 ## Author
 GPH0899
