@@ -145,6 +145,26 @@
             }
         }
     </style>
+    <script>
+        // Persist and restore selectors and game status using localStorage
+        function saveGameStatusToStorage() {
+            try {
+                const gameId = document.getElementById('gameIdInput')?.value || '';
+                const day = document.getElementById('dayPicker')?.value || '';
+                const calendarVal = document.getElementById('calendarSelect')?.value || '';
+                // Save selectors
+                localStorage.setItem('selectedGameId', gameId);
+                localStorage.setItem('selectedDay', day);
+                localStorage.setItem('selectedCalendar', calendarVal);
+                // Save game status response if available
+                if (typeof response !== 'undefined' && response) {
+                    localStorage.setItem('gameStatusResponse', JSON.stringify(response));
+                }
+            } catch (e) { }
+        }
+
+        // Make sure saveGameStatusToStorage is defined before any event listeners
+    </script>
 </head>
 
 <body>
@@ -162,6 +182,7 @@
             <select id="gameSelect" style="min-width:320px;">
                 <option value="">— Select a game —</option>
             </select>
+            <div id="selectedGameDetails"></div>
             <form id="statusForm" action="/gameStatus" method="get" style="display:inline;">
                 <input type="hidden" name="gameId" id="gameIdInput" />
                 <button type="submit">Check Game Status</button>
@@ -313,64 +334,119 @@
                                         <% }) %>
                                 </div>
                             </div>
-                                <% if (typeof fullResponse !== 'undefined' && fullResponse) { %>
-                                                                <div style="margin-top:1.2rem;">
-                                                                        <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Full Raw Response</h3>
-                                                                        <button type="button" id="toggleRawBtn" style="margin-bottom:.7rem; background:#3182ce; color:#fff; border:none; border-radius:6px; padding:.5rem 1rem; font-size:.98rem; cursor:pointer;">Show Raw Response</button>
-                                                                        <pre id="rawResponsePre" style="background:#edf2f7; padding:1.1rem; border-radius:10px; overflow:auto; font-size:1rem; color:#2d3748; margin-top:.5rem; display:none;">
+                            <% if (typeof fullResponse !=='undefined' && fullResponse) { %>
+                                <div style="margin-top:1.2rem;">
+                                    <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Full Raw Response
+                                    </h3>
+                                    <button type="button" id="toggleRawBtn"
+                                        style="margin-bottom:.7rem; background:#3182ce; color:#fff; border:none; border-radius:6px; padding:.5rem 1rem; font-size:.98rem; cursor:pointer;">Show
+                                        Raw Response</button>
+                                    <pre id="rawResponsePre"
+                                        style="background:#edf2f7; padding:1.1rem; border-radius:10px; overflow:auto; font-size:1rem; color:#2d3748; margin-top:.5rem; display:none;">
         <%= JSON.stringify(fullResponse, null, 2) %>
                                                                         </pre>
-                                                                </div>
-                                                                <script>
-                                                                    const toggleRawBtn = document.getElementById('toggleRawBtn');
-                                                                    const rawResponsePre = document.getElementById('rawResponsePre');
-                                                                    if (toggleRawBtn && rawResponsePre) {
-                                                                        toggleRawBtn.addEventListener('click', function() {
-                                                                            if (rawResponsePre.style.display === 'none') {
-                                                                                rawResponsePre.style.display = 'block';
-                                                                                toggleRawBtn.textContent = 'Hide Raw Response';
-                                                                            } else {
-                                                                                rawResponsePre.style.display = 'none';
-                                                                                toggleRawBtn.textContent = 'Show Raw Response';
-                                                                            }
-                                                                        });
-                                                                    }
-                                                                </script>
+                                </div>
+                                <script>
+                                    // Persist and restore selectors and game status using localStorage
+                                    function saveGameStatusToStorage() {
+                                        try {
+                                            const gameId = document.getElementById('gameIdInput')?.value || '';
+                                            const day = document.getElementById('dayPicker')?.value || '';
+                                            const calendarVal = document.getElementById('calendarSelect')?.value || '';
+                                            const gameVal = document.getElementById('gameSelect')?.value || '';
+                                            // Save selectors
+                                            localStorage.setItem('selectedGameId', gameId);
+                                            localStorage.setItem('selectedDay', day);
+                                            localStorage.setItem('selectedCalendar', calendarVal);
+                                            localStorage.setItem('selectedGame', gameVal);
+                                            // Save game status response if available
+                                            if (typeof response !== 'undefined' && response) {
+                                                localStorage.setItem('gameStatusResponse', JSON.stringify(response));
+                                            }
+                                        } catch (e) { }
+                                    }
+
+                                    function restoreSelectorsFromStorage() {
+                                        try {
+                                            const gameId = localStorage.getItem('selectedGameId') || '';
+                                            const day = localStorage.getItem('selectedDay') || '';
+                                            const calendarVal = localStorage.getItem('selectedCalendar') || '';
+                                            if (gameId) document.getElementById('gameIdInput').value = gameId;
+                                            if (day) document.getElementById('dayPicker').value = day;
+                                            if (calendarVal) document.getElementById('calendarSelect').value = calendarVal;
+                                            if (gameId) document.getElementById('gameSelect').value = gameId;
+                                        } catch (e) { }
+                                    }
+
+                                    function clearGameStatusStorage() {
+                                        localStorage.removeItem('selectedGameId');
+                                        localStorage.removeItem('selectedDay');
+                                        localStorage.removeItem('selectedCalendar');
+                                        localStorage.removeItem('gameStatusResponse');
+                                    }
+
+                                    // On page load, restore selectors if not on /
+                                    if (window.location.pathname !== '/') {
+                                        restoreSelectorsFromStorage();
+                                    } else {
+                                        clearGameStatusStorage();
+                                    }
+
+                                    // On /gameStatus, save after DOM is loaded
+                                    if (window.location.pathname === '/gameStatus') {
+                                        window.addEventListener('DOMContentLoaded', saveGameStatusToStorage);
+                                    }
+                                    const toggleRawBtn = document.getElementById('toggleRawBtn');
+                                    const rawResponsePre = document.getElementById('rawResponsePre');
+                                    if (toggleRawBtn && rawResponsePre) {
+                                        toggleRawBtn.addEventListener('click', function () {
+                                            if (rawResponsePre.style.display === 'none') {
+                                                rawResponsePre.style.display = 'block';
+                                                toggleRawBtn.textContent = 'Hide Raw Response';
+                                            } else {
+                                                rawResponsePre.style.display = 'none';
+                                                toggleRawBtn.textContent = 'Show Raw Response';
+                                            }
+                                        });
+                                    }
+                                </script>
                                 <% } %>
 
-                            <% } %>
-
-                                <% if (response && response.debug && response.debug.lastPlay) { %>
-                                    <div style="margin-top:1.2rem;">
-                                        <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Last Play
-                                            Details</h3>
-                                        <div
-                                            style="display:flex; flex-wrap:wrap; gap:0.5rem; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(49,130,206,0.04); padding:1rem;">
-                                            <% Object.entries(response.debug.lastPlay).forEach(function([key, value]) {
-                                                %>
-                                                <div
-                                                    style="flex:1 1 220px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:.5rem; padding:.7rem .9rem; background:#f8fafc;">
-                                                    <div
-                                                        style="font-weight:600; color:#2563eb; margin-bottom:.3rem; text-transform:capitalize;">
-                                                        <%= key %>
-                                                    </div>
-                                                    <div style="color:#2d3748; word-break:break-word;">
-                                                        <%= typeof value==='object' ? JSON.stringify(value, null, 2) :
-                                                            value %>
-                                                    </div>
-                                                </div>
-                                                <% }) %>
-                                        </div>
-                                    </div>
                                     <% } %>
-                                        <div style="margin-top:1.2rem;">
-                                            <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Full
-                                                Response Object</h3>
-                                            <pre
-                                                style="background:#edf2f7; padding:1.1rem; border-radius:10px; overflow:auto; font-size:1rem; color:#2d3748; margin-top:.5rem;">
+
+                                        <% if (response && response.debug && response.debug.lastPlay) { %>
+                                            <div style="margin-top:1.2rem;">
+                                                <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">Last
+                                                    Play
+                                                    Details</h3>
+                                                <div
+                                                    style="display:flex; flex-wrap:wrap; gap:0.5rem; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(49,130,206,0.04); padding:1rem;">
+                                                    <% Object.entries(response.debug.lastPlay).forEach(function([key,
+                                                        value]) { %>
+                                                        <div
+                                                            style="flex:1 1 220px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:.5rem; padding:.7rem .9rem; background:#f8fafc;">
+                                                            <div
+                                                                style="font-weight:600; color:#2563eb; margin-bottom:.3rem; text-transform:capitalize;">
+                                                                <%= key %>
+                                                            </div>
+                                                            <div style="color:#2d3748; word-break:break-word;">
+                                                                <%= typeof value==='object' ? JSON.stringify(value,
+                                                                    null, 2) : value %>
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                </div>
+                                            </div>
+                                            <% } %>
+                                                <div style="margin-top:1.2rem;">
+                                                    <h3 style="font-size:1.1rem; color:#2563eb; margin-bottom:.5rem;">
+                                                        Full
+                                                        Response Object</h3>
+                                                    <pre
+                                                        style="background:#edf2f7; padding:1.1rem; border-radius:10px; overflow:auto; font-size:1rem; color:#2d3748; margin-top:.5rem;">
     <%= JSON.stringify(response, null, 2) %>
                                     </pre>
-                                        </div>
+                                                </div>
                     </div>
                     <% } %>
 
@@ -380,6 +456,12 @@
                             const info = document.getElementById('gamesInfo');
                             const form = document.getElementById('statusForm');
                             const gameIdInput = document.getElementById('gameIdInput');
+                            // Save selectors to localStorage on form submit
+                            if (form) {
+                                form.addEventListener('submit', function () {
+                                    saveGameStatusToStorage();
+                                });
+                            }
 
                             // Calendar dropdown logic
                             const calendarSelect = document.getElementById('calendarSelect');
@@ -403,70 +485,115 @@
                             loadCalendar();
 
                             loadBtn.addEventListener('click', async () => {
-                                sel.innerHTML = '<option value="">Loading…</option>';
-                                info.textContent = '';
-                                // Get date from picker and format as YYYYMMDD
-                                const dayVal = document.getElementById('dayPicker').value;
-                                let dayStr = '';
-                                if (dayVal) {
-                                    const d = new Date(dayVal);
-                                    const yyyy = d.getFullYear();
-                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                    const dd = String(d.getDate()).padStart(2, '0');
-                                    dayStr = `${yyyy}${mm}${dd}`;
-                                }
-                                // If calendar entry selected, override dayStr
-                                const calVal = calendarSelect.value;
-                                if (calVal) {
-                                    dayStr = calVal;
-                                }
-                                try {
-                                    const r = await fetch(`/api/games${dayStr ? `?day=${dayStr}` : ''}`);
-                                    const j = await r.json();
-                                    // If RapidAPI response, try to extract games
-                                    let games = [];
-                                    let count = 0;
-                                    if (Array.isArray(j.games)) {
-                                        games = j.games;
-                                        count = j.count || games.length;
-                                    } else if (Array.isArray(j.items)) {
-                                        games = j.items;
-                                        count = games.length;
-                                    } else if (Array.isArray(j.events)) {
-                                        games = j.events;
-                                        count = games.length;
+                                    sel.innerHTML = '<option value="">Loading…</option>';
+                                    info.textContent = '';
+                                    // Get date from picker and format as YYYYMMDD
+                                    const dayVal = document.getElementById('dayPicker').value;
+                                    let dayStr = '';
+                                    if (dayVal) {
+                                        const d = new Date(dayVal);
+                                        const yyyy = d.getFullYear();
+                                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                        const dd = String(d.getDate()).padStart(2, '0');
+                                        dayStr = `${yyyy}${mm}${dd}`;
                                     }
-                                    sel.innerHTML = '<option value="">— Select a game —</option>';
-                                    games.forEach(g => {
-                                        // Try to get id and label
-                                        const id = g.id || g.gameId || g.eventId || '';
-                                        let optionText = '';
-                                        if (g.shortName && g.name) {
-                                            optionText = `${g.shortName} (${g.name})`;
-                                        } else if (g.label) {
-                                            optionText = g.label;
-                                        } else if (g.shortName) {
-                                            optionText = g.shortName;
-                                        } else if (g.name) {
-                                            optionText = g.name;
-                                        } else if (g.description) {
-                                            optionText = g.description;
-                                        } else {
-                                            optionText = id;
+                                    // If calendar entry selected, override dayStr
+                                    const calVal = calendarSelect.value;
+                                    if (calVal) {
+                                        dayStr = calVal;
+                                    }
+                                    try {
+                                        const r = await fetch(`/api/games${dayStr ? `?day=${dayStr}` : ''}`);
+                                        const j = await r.json();
+                                        // If RapidAPI response, try to extract games
+                                        let games = [];
+                                        let count = 0;
+                                        if (Array.isArray(j.games)) {
+                                            games = [...j.games];
+                                            count = j.count || games.length;
+                                        } else if (Array.isArray(j.items)) {
+                                            games = [...j.items];
+                                            count = games.length;
+                                        } else if (Array.isArray(j.events)) {
+                                            games = [...j.events];
+                                            count = games.length;
                                         }
-                                        sel.innerHTML += `<option value="${id}">${optionText}</option>`;
+                                        // Store only id and optionText
+                                        const simpleGames = games.map(g => {
+                                            const id = g.id || g.gameId || g.eventId || '';
+                                            let optionText = '';
+                                            if (g.shortName && g.name) {
+                                                optionText = `${g.shortName} (${g.name})`;
+                                            } else if (g.label) {
+                                                optionText = g.label;
+                                            } else if (g.shortName) {
+                                                optionText = g.shortName;
+                                            } else if (g.name) {
+                                                optionText = g.name;
+                                            } else if (g.description) {
+                                                optionText = g.description;
+                                            } else {
+                                                optionText = id;
+                                            }
+                                            return { id, optionText };
+                                        });
+                                        saveLoadedGamesToIndexedDB(simpleGames);
+                                        sel.innerHTML = '<option value="">— Select a game —</option>';
+                                        simpleGames.forEach(g => {
+                                            sel.innerHTML += `<option value="${g.id}">${g.optionText}</option>`;
+                                        });
+                                        info.textContent = count
+                                            ? `Found ${count} game(s).`
+                                            : 'No games found for this date.';
+                                    } catch (e) {
+                                        sel.innerHTML = '<option value="">— Select a game —</option>';
+                                        info.textContent = 'Failed to load games.';
+                                    }
+                                // Restore loaded games to selector on page load if present
+                                function restoreLoadedGames() {
+                                    const gamesStr = loadLoadedGamesFromIndexedDB(function(games) {
+                                        if (games && games.length) {
+                                            sel.innerHTML = '<option value="">— Select a game —</option>';
+                                            games.forEach(g => {
+                                                sel.innerHTML += `<option value="${g.id}">${g.optionText}</option>`;
+                                            });
+                                        }
                                     });
-                                    info.textContent = count
-                                        ? `Found ${count} game(s).`
-                                        : 'No games found for this date.';
-                                } catch (e) {
-                                    sel.innerHTML = '<option value="">— Select a game —</option>';
-                                    info.textContent = 'Failed to load games.';
+                                    if (gamesStr) {
+                                        try {
+                                            const games = JSON.parse(gamesStr);
+                                            sel.innerHTML = '<option value="">— Select a game —</option>';
+                                            games.forEach(g => {
+                                                sel.innerHTML += `<option value="${g.id}">${g.optionText}</option>`;
+                                            });
+                                        } catch (e) { }
+                                    }
                                 }
+
+                                // On page load, restore loaded games if not on /
+                                if (window.location.pathname !== '/') {
+                                    restoreLoadedGames();
+                                } else {
+                                    localStorage.removeItem('loadedGames');
+                                }
+                            });
+
+
+                            // When game selector is clicked, fetch games from IndexedDB and populate
+                            sel.addEventListener('click', () => {
+                                loadLoadedGamesFromIndexedDB(function(games) {
+                                    if (games && games.length) {
+                                        sel.innerHTML = '<option value="">— Select a game —</option>';
+                                        games.forEach(g => {
+                                            sel.innerHTML += `<option value="${g.id}">${g.optionText}</option>`;
+                                        });
+                                    }
+                                });
                             });
 
                             sel.addEventListener('change', () => {
                                 gameIdInput.value = sel.value || '';
+                                saveGameStatusToStorage();
                             });
 
                             // Add event for current games button
@@ -518,6 +645,42 @@
                                     info.textContent = 'Failed to load current games.';
                                 }
                             });
+                            function saveLoadedGamesToIndexedDB(games) {
+    const request = indexedDB.open('NFLAppDB', 1);
+    request.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('games')) {
+            db.createObjectStore('games', { keyPath: 'id' });
+        }
+    };
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction('games', 'readwrite');
+        const store = tx.objectStore('games');
+        store.clear(); // Remove old games
+        games.forEach(game => store.put(game));
+        tx.oncomplete = () => db.close();
+    };
+}
+function loadLoadedGamesFromIndexedDB(callback) {
+    const request = indexedDB.open('NFLAppDB', 1);
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction('games', 'readonly');
+        const store = tx.objectStore('games');
+        const games = [];
+        store.openCursor().onsuccess = function(e) {
+            const cursor = e.target.result;
+            if (cursor) {
+                games.push(cursor.value);
+                cursor.continue();
+            } else {
+                callback(games);
+                db.close();
+            }
+        };
+    };
+}
                         </script>
 
     </div>
